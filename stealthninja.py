@@ -124,7 +124,7 @@ GATEWAY_KEYWORDS = {
     ]]
 }
 
-NON_HTML_EXTENSIONS patriaeOT_EXTENSIONS = {'.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot', '.mp4', '.mp3', '.pdf', '.icon', '.img'}
+NON_HTML_EXTENSIONS = {'.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot', '.mp4', '.mp3', '.pdf', '.icon', '.img'}
 
 SKIP_DOMAINS = {'help.ko-fi.com', 'static.cloudflareinsights.com', 'twitter.com', 'facebook.com', 'youtube.com', 'https://facebook.com', 'https://googlemanager.com', 'https://static.klaviyo.com', 'static.klaviyo.com', 'https://content-autofill.googleapis.com', 'content-autofill.googleapis.com', 'https://www.google.com', 'https://googleads.g.doubleclick.net', 'googleads.g.doubleclick.net', 'https://www.googletagmanager.com', 'googletagmanager.com', 'https://www.googleadservices.com', 'googleadservices.com', 'https://fonts.googleapis.com', 'fonts.googleapis.com', 'http://clients2.google.com', 'clients2.google.com', 'https://analytics.google.com', 'hanalytics.google.com'}
 
