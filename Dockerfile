@@ -35,11 +35,12 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright browsers as root
-RUN playwright install chromium
+# Install Playwright browsers as root and verify
+RUN playwright install chromium && ls -la /root/.cache/ms-playwright/chromium-*
 
 # Create non-root user for security
 RUN useradd -m appuser && chown -R appuser:appuser /app
+RUN chmod -R 777 /root/.cache/ms-playwright
 
 # Copy application code
 COPY stealthninja.py .
