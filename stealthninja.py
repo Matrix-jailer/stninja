@@ -11,6 +11,7 @@ from seleniumwire import webdriver
 from fake_useragent import UserAgent
 from urllib.parse import urlparse
 import time
+from selenium.webdriver.common.by import By
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -309,13 +310,30 @@ class StealthPaymentDetector:
                 if any(keyword in text for keyword in BUTTON_KEYWORDS):
                     logger.info(f"Found payment-related button: {text}")
                     try:
-                        await page.wait_for_timeout(1000)
-                        await button.click()
+                        # Ensure button is visible and in viewport
+                        await button.wait_for_element_state("visible", timeout=5000)
+                        await button.scroll_into_view_if_needed(timeout=5000)
+                        # Verify button is interactable
+                        is_in_viewport = await button.evaluate("(element) => {
+                            const rect = element.getBoundingClientRect();
+                            return (
+                                rect.top >= 0 &&
+                                rect.left >= 0 &&
+                                rect.bottom <= window.innerHeight &&
+                                rect.right <= window.innerWidth
+                            );
+                        }")
+                        if not is_in_viewport:
+                            logger.warning(f"Button '{text}' is not in viewport, skipping")
+                            continue
+                        # Attempt click with limited retries
+                        await button.click(timeout=10000, trial=3)
                         logger.info(f"Clicked button: {text}")
                         await page.wait_for_timeout(2000)
                         await self.analyze_dom(page, url)
                     except Exception as e:
                         logger.error(f"Error clicking button {text}: {e}")
+                        continue
         except Exception as e:
             logger.error(f"Error interacting with buttons on {url}: {e}")
 
@@ -366,6 +384,14 @@ class StealthPaymentDetector:
             options.add_experimental_option('excludeSwitches', ['enable-automation'])
             options.add_experimental_option('useAutomationExtension', False)
 
+            # Optional: Add proxy support for better Cloudflare bypass (uncomment to enable)
+            # proxy = {
+            #     "http": os.getenv("HTTP_PROXY", ""),
+            #     "https": os.getenv("HTTPS_PROXY", ""),
+            #     "no_proxy": "localhost,127.0.0.1"
+            # }
+            # driver = webdriver.Chrome(options=options, seleniumwire_options={"proxy": proxy if proxy["http"] else {}})
+            
             driver = webdriver.Chrome(options=options)
             driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": self.ua.random})
             driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
@@ -379,7 +405,8 @@ class StealthPaymentDetector:
             driver.get(url)
             time.sleep(3)
 
-            buttons = driver.find_elements_by_css_selector('button, a, input[type="submit"], input[type="button"]')
+            from selenium.webdriver.common.by import By
+            buttons = driver.find_elements(By.CSS_SELECTOR, 'button, a, input[type="submit"], input[type="button"]')
             for button in buttons:
                 text = button.text.lower().strip()
                 if any(keyword in text for keyword in BUTTON_KEYWORDS):
