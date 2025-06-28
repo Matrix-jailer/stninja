@@ -81,7 +81,7 @@ THREE_D_SECURE_KEYWORDS = [re.compile(pattern, re.IGNORECASE) for pattern in [
     r'idcheck', r'garanti\.com\.tr', r'adyen\.com/hpp', r'adyen\.com/checkout',
     r'adyenpayments\.com/3ds', r'auth\.razorpay\.com', r'razorpay\.com/3ds',
     r'secure\.razorpay\.com', r'3ds\.braintreegateway\.com', r'verify\.3ds',
-    r'checkout\.com/3ds', r'checkout\.com/ch mascot", r'3ds\.paypal\.com',
+    r'checkout\.com/3ds', r'checkout\.com/challenge', r'3ds\.paypal\.com',
     r'authentication\.klarna\.com', r'secure\.klarna\.com/3ds'
 ]]
 
