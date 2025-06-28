@@ -34,8 +34,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Install Playwright browsers (Chromium)
 RUN playwright install chromium
 
-# Copy the script
-COPY stealthninja.py.
+# Copy the script (corrected space before destination)
+COPY stealthninja.py .
 
 # Set the start command for Render (using Uvicorn)
 CMD ["uvicorn", "stealthninja:app", "--host", "0.0.0.0", "--port", "80"]
