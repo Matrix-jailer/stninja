@@ -498,12 +498,12 @@ class StealthPaymentDetector:
                 try:
                     text = await button.inner_text() or ''
                     text = text.lower().strip()
-                    attributes = await button.get_attributes(timeout=5000) or {}
+                    attributes = await button.evaluate('(element) => Object.fromEntries(Object.entries(element.attributes).map(([k, v]) => [k, v.value]))') or {}
                     attr_string = ' '.join(attributes.values()).lower()
                     if any(keyword in text for keyword in BUTTON_KEYWORDS) or \
                     any(keyword in attr_string for keyword in BUTTON_KEYWORDS):
                         logger.info(f'Found payment-related button: {text} (attributes: {attr_string})')
-                        await button.click(timeout=5000)  # Click to trigger payment flow
+                        await button.click(timeout=5000)
                     else:
                         logger.debug(f'Skipped button, no payment keywords in text: "{text}" or attributes: "{attr_string}"')
                 except Exception as e:
