@@ -174,7 +174,7 @@ class StealthPaymentDetector:
         }
         self.ua = UserAgent()
         self.visited_urls = set()
-        self.max_depth = 2
+        self.max_depth = 3
         self.max_urls = 50
 
     async def analyze_dom(self, page, url):
