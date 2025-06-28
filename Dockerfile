@@ -35,7 +35,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN playwright install chromium
 
 # Copy the script
-COPY stealth_payment_detector.py .
+COPY stealthninja.py.
 
 # Set the start command for Render (using Uvicorn)
-CMD ["uvicorn", "stealth_payment_detector:app", "--host", "0.0.0.0", "--port", "80"]
+CMD ["uvicorn", "stealthninja:app", "--host", "0.0.0.0", "--port", "80"]
