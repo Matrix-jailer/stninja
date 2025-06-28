@@ -17,7 +17,7 @@ from selenium.webdriver.common.by import By
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Provided keyword lists and regex patterns (unchanged from your input)
+# Provided keyword lists and regex patterns (unchanged)
 NETWORK_PAYMENT_URL_KEYWORDS = [
     "/checkout", "/payment", "/pay", "/setup_intent", "/authorize_payment", "/intent",
     "/confirm", "/charge", "/authorize", "/submit_payment", "/create_order",
@@ -154,7 +154,7 @@ BUTTON_KEYWORDS = [
 ]
 
 # FastAPI setup
-app = FastAPI(title="Payment Gateway Detector API")
+app = FastAPI(title='Payment Gateway Detector API')
 
 class URLRequest(BaseModel):
     url: str
@@ -178,7 +178,7 @@ class StealthPaymentDetector:
         self.max_urls = 50
 
     async def analyze_dom(self, page, url):
-        """Analyze DOM, iframes, shadow DOM, and hidden elements for payment-related data."""
+        'Analyze DOM, iframes, shadow DOM, and hidden elements for payment-related data.'
         try:
             content = await page.content()
 
@@ -301,7 +301,7 @@ class StealthPaymentDetector:
             logger.error(f"Error analyzing DOM for {url}: {e}")
 
     async def interact_with_buttons(self, page, url):
-        """Click payment-related buttons to trigger network calls."""
+        'Click payment-related buttons to trigger network calls.'
         try:
             buttons = await page.query_selector_all('button, a, input[type="submit"], input[type="button"]')
             for button in buttons:
@@ -314,15 +314,7 @@ class StealthPaymentDetector:
                         await button.wait_for_element_state("visible", timeout=5000)
                         await button.scroll_into_view_if_needed(timeout=5000)
                         # Verify button is interactable
-                        is_in_viewport = await button.evaluate("""(element) => {
-                            const rect = element.getBoundingClientRect();
-                            return (
-                                rect.top >= 0 &&
-                                rect.top >= 0 &&
-                                rect.bottom <= window.innerHeight &&
-                                rect.right <= window.innerWidth
-                            );
-                        }")
+                        is_in_viewport = await button.evaluate('(element) => { const rect = element.getBoundingClientRect(); return (rect.top >= 0 && rect.left >= 0 && rect.bottom <= window.innerHeight && rect.right <= window.innerWidth); }')
                         if not is_in_viewport:
                             logger.warning(f"Button '{text}' is not in viewport, skipping")
                             continue
@@ -338,7 +330,7 @@ class StealthPaymentDetector:
             logger.error(f"Error interacting with buttons on {url}: {e}")
 
     async def capture_network(self, page, url):
-        """Capture network requests using Playwright."""
+        'Capture network requests using Playwright.'
         try:
             def on_request(request):
                 req_url = request.url
@@ -371,7 +363,7 @@ class StealthPaymentDetector:
             logger.error(f"Error capturing network requests for {url}: {e}")
 
     def selenium_network_analysis(self, url):
-        """Use Selenium Wire to capture and analyze network calls."""
+        'Use Selenium Wire to capture and analyze network calls.'
         try:
             options = webdriver.ChromeOptions()
             options.add_argument(f'user-agent={self.ua.random}')
@@ -384,38 +376,34 @@ class StealthPaymentDetector:
             options.add_experimental_option('excludeSwitches', ['enable-automation'])
             options.add_experimental_option('useAutomationExtension', False)
 
-            # Optional: Add proxy support for better Cloudflare bypass (uncomment to enable)
-            # proxy = {
-            #     "http": os.getenv("HTTP_PROXY", ""),
-            #     "https": os.getenv("HTTPS_PROXY", ""),
-            #     "no_proxy": "localhost,127.0.0.1"
-            # }
-            # driver = webdriver.Chrome(options=options, seleniumwire_options={"proxy": proxy if proxy["http"] else {}})
-            
-            driver = webdriver.Chrome(options=options)
+            # Optional: Add proxy support for better Cloudflare bypass
+            proxy = {
+                "http": os.getenv("HTTP_PROXY", ""),
+                "https": os.getenv("HTTPS_PROXY", ""),
+                "no_proxy": "localhost,127.0.0.1"
+            }
+            seleniumwire_options = {"proxy": proxy if proxy["http"] else {}}
+            seleniumwire_options["connection_timeout"] = 10
+            driver = webdriver.Chrome(options=options, seleniumwire_options=seleniumwire_options)
+
             driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": self.ua.random})
             driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
-                'source': '''
-                    Object.defineProperty(navigator, 'webdriver', {
-                        get: () => undefined
-                    })
-                '''
+                'source': 'Object.defineProperty(navigator, "webdriver", { get: () => undefined })'
             })
 
-
-            from selenium.webdriver.common.by import By
             max_retries = 3
             for attempt in range(max_retries):
                 try:
-                  driver.get(url)
-                  time.sleep(3)
-                  break
+                    driver.get(url)
+                    time.sleep(3)
+                    break
                 except Exception as e:
                     logger.error(f"Retry {attempt + 1}/{max_retries} failed for driver.get({url}): {e}")
                     if attempt == max_retries - 1:
                         logger.error(f"Max retries reached for {url}, skipping Selenium analysis")
                         return
-                        time.sleep(2)
+                    time.sleep(2)
+
             buttons = driver.find_elements(By.CSS_SELECTOR, 'button, a, input[type="submit"], input[type="button"]')
             for button in buttons:
                 text = button.text.lower().strip()
@@ -463,7 +451,7 @@ class StealthPaymentDetector:
             logger.error(f"Error in Selenium network analysis for {url}: {e}")
 
     async def crawl(self, url, depth=0):
-        """Crawl the website using Playwright with stealth configurations."""
+        'Crawl the website using Playwright with stealth configurations.'
         if depth > self.max_depth or len(self.visited_urls) >= self.max_urls:
             return
 
@@ -483,13 +471,7 @@ class StealthPaymentDetector:
                     timezone_id='America/New_York'
                 )
 
-                await context.add_init_script("""
-                    Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-                    Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
-                    Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3] });
-                    window.chrome = { runtime: {} };
-                    Object.defineProperty(navigator, 'platform', { get: () => 'Win32' });
-                """)
+                await context.add_init_script('Object.defineProperty(navigator, "webdriver", { get: () => undefined }); Object.defineProperty(navigator, "languages", { get: () => ["en-US", "en"] }); Object.defineProperty(navigator, "plugins", { get: () => [1, 2, 3] }); window.chrome = { runtime: {} }; Object.defineProperty(navigator, "platform", { get: () => "Win32" });')
 
                 page = await context.new_page()
 
@@ -529,9 +511,9 @@ class StealthPaymentDetector:
             except Exception as e:
                 logger.error(f"Error crawling {url}: {e}")
 
-    async def run(self, start_url):
+    async def run(self, url):
         'Run the detector and return results.'
-        self.results = {  # Reset results for each run
+        self.results = {
             "payment_gateways": [],
             "captchas": [],
             "cloudflare": False,
@@ -544,8 +526,8 @@ class StealthPaymentDetector:
         }
         self.visited_urls = set()
 
-        await self.crawl(start_url)
-        self.selenium_network_analysis(start_url)
+        await self.crawl(url)
+        self.selenium_network_analysis(url)
 
         return self.results
 
