@@ -58,7 +58,7 @@ IGNORE_IF_URL_CONTAINS = [
     
     # CDN & framework scripts
     "cdn.jsdelivr.net", "cloudflareinsights.com", "cdnjs", "bootstrapcdn", "polyfill.io", 
-    "jsdelivr.net", "unpkg.com", "yastatic.net", "akamai", "fastly", 
+    "jsdelivr.net", "unpkg.com", "yastatic.net", "akamai", "fastly", "usercentrics.eu", "app.usercentrics.eu",
     
     # Media, tracking images
     ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tiff", ".svg", ".ico", 
@@ -73,7 +73,7 @@ IGNORE_IF_URL_CONTAINS = [
 NON_HTML_EXTENSIONS = ['.css', '.js', '.jpg', '.jpeg', '.png', '.gif', '.svg', '.woff', '.woff2', '.ttf', '.eot']
 
 SKIP_DOMAINS = [
-    'google-analytics.com', 'googletagmanager.com', 'facebook.com', 'twitter.com',
+    'google-analytics.com', 'googletagmanager.com', 'facebook.com', 'twitter.com', 'usercentrics.eu', app.usercentrics.eu',
     'doubleclick.net', 'adservice.google.com', 'cloudflare.com', 'gstatic.com'
 ]
 
@@ -495,26 +495,19 @@ class StealthPaymentDetector:
         try:
             buttons = await page.query_selector_all('button, a, input[type="submit"], input[type="button"]')
             for button in buttons:
-                text = await button.inner_text() or ''
-                text = text.lower().strip()
-                if any(keyword in text for keyword in BUTTON_KEYWORDS):
-                    logger.info(f'Found payment-related button: {text}')
-                    try:
-                        await button.wait_for_element_state('visible', timeout=10000)
-                        await button.scroll_into_view_if_needed(timeout=10000)
-                        is_in_viewport = await button.evaluate('(element) => { const rect = element.getBoundingClientRect(); return (rect.top >= -100 && rect.left >= -100 && rect.bottom <= window.innerHeight + 100 && rect.right <= window.innerWidth + 100); }')
-                        if not is_in_viewport:
-                            logger.warning(f'Button "{text}" is not fully in viewport, skipping: {await button.evaluate("el => JSON.stringify(el.getBoundingClientRect())")}')
-                            continue
-                        await button.click(timeout=10000, trial=3, force=True)
-                        logger.info(f'Clicked button: {text}')
-                        await page.wait_for_timeout(5000)
-                        await self.analyze_dom(page, url)
-                    except Exception as e:
-                        logger.error(f'Error clicking button {text}: {e}')
-                        continue
-                else:
-                    logger.debug(f'Button skipped, no payment keywords in text: {text}')
+                try:
+                    text = await button.inner_text(timeout=5000) or ''
+                    text = text.lower().strip()
+                    attributes = await button.get_attributes(timeout=5000) or {}
+                    attr_string = ' '.join(attributes.values()).lower()
+                    if any(keyword in text for keyword in BUTTON_KEYWORDS) or \
+                    any(keyword in attr_string for keyword in BUTTON_KEYWORDS):
+                        logger.info(f'Found payment-related button: {text} (attributes: {attr_string})')
+                        await button.click(timeout=5000)  # Click to trigger payment flow
+                    else:
+                        logger.debug(f'Skipped button, no payment keywords in text: "{text}" or attributes: "{attr_string}"')
+                except Exception as e:
+                    logger.error(f'Error processing button: {e}')
         except Exception as e:
             logger.error(f'Error interacting with buttons on {url}: {e}')
 
