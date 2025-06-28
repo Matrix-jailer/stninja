@@ -5,7 +5,7 @@ FROM python:3.10-slim
 WORKDIR /app
 
 # Install system dependencies required for Playwright and Selenium
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
     curl \
@@ -34,7 +34,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Install Playwright browsers (Chromium)
 RUN playwright install chromium
 
-# Copy the script (corrected space before destination)
+# Copy the script
 COPY stealthninja.py .
 
 # Set the start command for Render (using Uvicorn)
