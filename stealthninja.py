@@ -10,7 +10,6 @@ from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.common.by import By
 from seleniumwire import webdriver
 from fake_useragent import UserAgent
-from bs4 import BeautifulSoup
 
 # Configure logging with DEBUG level
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
