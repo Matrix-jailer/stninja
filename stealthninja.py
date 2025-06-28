@@ -530,7 +530,7 @@ class StealthPaymentDetector:
                 logger.error(f"Error crawling {url}: {e}")
 
     async def run(self, start_url):
-        """Run the detector and return results."""
+        'Run the detector and return results.'
         self.results = {  # Reset results for each run
             "payment_gateways": [],
             "captchas": [],
