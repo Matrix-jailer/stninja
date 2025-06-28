@@ -73,7 +73,7 @@ IGNORE_IF_URL_CONTAINS = [
 NON_HTML_EXTENSIONS = ['.css', '.js', '.jpg', '.jpeg', '.png', '.gif', '.svg', '.woff', '.woff2', '.ttf', '.eot']
 
 SKIP_DOMAINS = [
-    'google-analytics.com', 'googletagmanager.com', 'facebook.com', 'twitter.com', 'usercentrics.eu', app.usercentrics.eu',
+    'google-analytics.com', 'googletagmanager.com', 'facebook.com', 'twitter.com', 'usercentrics.eu', 'app.usercentrics.eu',
     'doubleclick.net', 'adservice.google.com', 'cloudflare.com', 'gstatic.com'
 ]
 
