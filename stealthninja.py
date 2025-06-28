@@ -496,7 +496,7 @@ class StealthPaymentDetector:
             buttons = await page.query_selector_all('button, a, input[type="submit"], input[type="button"]')
             for button in buttons:
                 try:
-                    text = await button.inner_text(timeout=5000) or ''
+                    text = await button.inner_text() or ''
                     text = text.lower().strip()
                     attributes = await button.get_attributes(timeout=5000) or {}
                     attr_string = ' '.join(attributes.values()).lower()
