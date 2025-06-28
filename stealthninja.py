@@ -17,14 +17,58 @@ logger = logging.getLogger(__name__)
 
 # Global constants
 NETWORK_PAYMENT_URL_KEYWORDS = [
-    '/checkout', '/payment', '/pay', '/setup_intent', '/authorize_payment', '/intent',
-    '/confirm', '/charge', '/authorize', '/submit_payment', '/create_order',
-    '/payment_intent', '/process_payment', '/transaction', '/confirm_payment',
-    '/capture', '/payment-method', '/billing', '/invoice', '/order/submit',
-    '/tokenize', '/session', '/execute-payment', '/complete', '/pricing', '/subscribe'
+    re.compile(rf"\b{kw}\b", re.IGNORECASE)
+    for kw in [
+        "/cart", "/checkout", "/payment", "/buy", "/purchase", "/order", "/billing", "/subscribe",
+        "/shop", "/store", "/pricing", "/add-to-cart", "/pay-now", "/secure-checkout", "/complete-order",
+        "/transaction", "/invoice", "/checkout2", "/donate", "/donation", "/add-to-bag", "/add-to-basket",
+        "/shop-now", "/buy-now", "/order-now", "/proceed-to-checkout", "/pay", "/payment-method",
+        "/credit-card", "/debit-card", "/place-order", "/confirm-purchase", "/get-started",
+        "/sign-up", "/join-now", "/membership", "/upgrade", "/renew", "/trial", "/subscribe-now",
+        "/book-now", "/reserve", "/fund", "/pledge", "/support", "/contribute",
+        "/complete-purchase", "/finalize-order", "/payment-details", "/billing-info",
+        "/secure-payment", "/pay-securely", "/shop-secure", "/give", "/donate-now", "/donatenow",
+        "/donate_now", "/get-now", "/browse", "/items", "/product", "/item",
+        "/giftcard", "/topup", "/plans", "/buynow", "/sell", "/sell-now", "/purchase-now",
+        "/shopnow", "/shopping", "/menu",
+        "/sale", "/vps", "/server",
+        "/cart-items", "/buy-secure", "/cart-page", "/checkout-page",
+        "/order-summary", "/payment-form", "/purchase-flow", "/shop-cart", "/ecommerce", "/store-cart",
+        "/buy-button", "/purchase-button", "/add-item", "/remove-item", "/cart-update",
+        "/apply-coupon", "/redeem-code", "/discount-code", "/promo-code", "/gift-card", "/pay-with",
+        "/payment-options", "/express-checkout", "/quick-buy", "/one-click-buy", "/instant-purchase"
+    ]
 ]
 
-IGNORE_IF_URL_CONTAINS = ['logout', 'login', 'signup', 'signout', 'account', 'profile']
+IGNORE_IF_URL_CONTAINS = [
+    # Common asset/content folders
+    "wp-content", "wp-includes", "skin/frontend", "/assets/", "/themes/", "/static/", "/media/", "/images/", "/img/",
+
+    "https://facebook.com", "https://googlemanager.com", "https://static.klaviyo.com", "static.klaviyo.com", "https://content-autofill.googleapis.com",
+    "content-autofill.googleapis.com", "https://www.google.com", "https://googleads.g.doubleclick.net", "googleads.g.doubleclick.net", "googleads.g.doubleclick.net",
+    "https://www.googletagmanager.com", "googletagmanager.com", "https://www.googleadservices.com", "googleadservices.com", "https://fonts.googleapis.com",
+    "fonts.googleapis.com", "http://clients2.google.com", "clients2.google.com", "https://analytics.google.com", "hanalytics.google.com",
+    
+    # Analytics & marketing scripts
+    "googleapis", "gstatic", "googletagmanager", "google-analytics", "analytics", "doubleclick.net", 
+    "facebook.net", "fbcdn", "pixel.", "tiktokcdn", "matomo", "segment.io", "clarity.ms", "mouseflow", "hotjar", 
+    
+    # Fonts, icons, visual only
+    "fonts.", "fontawesome", ".woff", ".woff2", ".ttf", ".eot", ".otf", ".ico", ".svg",
+    
+    # CDN & framework scripts
+    "cdn.jsdelivr.net", "cloudflareinsights.com", "cdnjs", "bootstrapcdn", "polyfill.io", 
+    "jsdelivr.net", "unpkg.com", "yastatic.net", "akamai", "fastly", 
+    
+    # Media, tracking images
+    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tiff", ".svg", ".ico", 
+    
+    # Useless scripts/styles
+    ".css", ".scss", ".less", ".map", ".js", "main.js", "bundle.js", "common.js", "theme.js", "style.css", "custom.css",
+
+    # Other non-payment known paths
+    "/favicon", "/robots.txt", "/sitemap", "/manifest", "/rss", "/feed", "/help", "/support", "/about", "/terms", "/privacy",
+]
 
 NON_HTML_EXTENSIONS = ['.css', '.js', '.jpg', '.jpeg', '.png', '.gif', '.svg', '.woff', '.woff2', '.ttf', '.eot']
 
@@ -45,11 +89,11 @@ PAYMENT_GATEWAY_DOMAINS = [
     'paypal.com', 'stripe.com', 'braintreegateway.com', 'adyen.com', 'authorize.net',
     'squareup.com', 'klarna.com', 'checkout.com', 'razorpay.com', 'paytm.in',
     'shopify.com', 'worldpay.com', '2co.com', 'amazon.com', 'apple.com', 'google.com',
-    'mollie.com', 'opayo.eu', 'paddle.com', 'chargebee.com', 'recurly.com', 'fastspring.com'
+    'mollie.com', 'opayo.eu', 'paddle.com'
 ]
 
 GATEWAY_KEYWORDS = {
-    'stripe': [re.compile(pattern, re.IGNORECASE) for pattern in [
+    "stripe": [re.compile(pattern, re.IGNORECASE) for pattern in [
         r'stripe\.com', r'api\.stripe\.com/v1', r'js\.stripe\.com', r'stripe\.js', r'stripe\.min\.js',
         r'client_secret', r'payment_intent', r'data-stripe', r'stripe-payment-element',
         r'stripe-elements', r'stripe-checkout', r'hooks\.stripe\.com', r'm\.stripe\.network',
@@ -61,60 +105,157 @@ GATEWAY_KEYWORDS = {
         r'stripe\.com/docs', r'checkout\.stripe\.com', r'stripe-js', r'stripe-redirect',
         r'stripe-payment', r'stripe\.network', r'stripe-checkout\.js'
     ]],
-    'paypal': [re.compile(pattern, re.IGNORECASE) for pattern in [
-        r'api\.paypal\.com', r'paypal\.com', r'paypal-sdk\.com', r'paypal\.js', r'paypalobjects\.com',
-        r'paypal_express_checkout', r'e\.PAYPAL_EXPRESS_CHECKOUT', r'paypal-button',
-        r'paypal-checkout-sdk', r'paypal-sdk\.js', r'paypal-smart-button', r'paypal_express_checkout/api',
+    "paypal": [re.compile(pattern, re.IGNORECASE) for pattern in [
+        r'api\.paypal\.com', r'paypal\.com', r'paypal-sdk\.com', r'paypal\.js', r'paypalobjects\.com', r'paypal_express_checkout', r'e\.PAYPAL_EXPRESS_CHECKOUT',
+        r'paypal-button', r'paypal-checkout-sdk', r'paypal-sdk\.js', r'paypal-smart-button', r'paypal_express_checkout/api',
         r'paypal-rest-sdk', r'paypal-transaction', r'itch\.io/api-transaction/paypal',
         r'PayPal\.Buttons', r'paypal\.Buttons', r'data-paypal-client-id', r'paypal\.com/sdk/js',
         r'paypal\.Order\.create', r'paypal-checkout-component', r'api-m\.paypal\.com', r'paypal-funding',
         r'paypal-hosted-fields', r'paypal-transaction-id', r'paypal\.me', r'paypal\.com/v2/checkout',
         r'paypal-checkout', r'paypal\.com/api', r'sdk\.paypal\.com', r'gotopaypalexpresscheckout'
     ]],
-    'braintree': [re.compile(pattern, re.IGNORECASE) for pattern in [
+    "braintree": [re.compile(pattern, re.IGNORECASE) for pattern in [
         r'api\.braintreegateway\.com/v1', r'braintreepayments\.com', r'js\.braintreegateway\.com',
         r'client_token', r'braintree\.js', r'braintree-hosted-fields', r'braintree-dropin', r'braintree-v3',
         r'braintree-client', r'braintree-data-collector', r'braintree-payment-form', r'braintree-3ds-verify',
         r'client\.create', r'braintree\.min\.js', r'assets\.braintreegateway\.com', r'braintree\.setup',
         r'data-braintree', r'braintree\.tokenize', r'braintree-dropin-ui', r'braintree\.com'
     ]],
-    'adyen': [re.compile(pattern, re.IGNORECASE) for pattern in [
+    "adyen": [re.compile(pattern, re.IGNORECASE) for pattern in [
         r'checkoutshopper-live\.adyen\.com', r'adyen\.com/hpp', r'adyen\.js', r'data-adyen',
         r'adyen-checkout', r'adyen-payment', r'adyen-components', r'adyen-encrypted-data',
         r'adyen-cse', r'adyen-dropin', r'adyen-web-checkout', r'live\.adyen-services\.com',
         r'adyen\.encrypt', r'checkoutshopper-test\.adyen\.com', r'adyen-checkout__component',
         r'adyen\.com/v1', r'adyen-payment-method', r'adyen-action', r'adyen\.min\.js', r'adyen\.com'
     ]],
-    'paddle': [re.compile(pattern, re.IGNORECASE) for pattern in [
-        r'paddle\.com', r'api\.paddle\.com', r'checkout\.paddle\.com', r'paddlejs',
-        r'paddle\.js', r'paddle-checkout', r'data-paddle', r'Paddle\.Setup',
-        r'paddle-checkout-sdk', r'secure\.paddle\.com', r'paddle\.min\.js',
-        r'paddle-billing', r'paddle-payment', r'paddle-subscription'
+    "authorize.net": [re.compile(pattern, re.IGNORECASE) for pattern in [
+        r'authorize\.net/gateway/transact\.dll', r'js\.authorize\.net/v1/Accept\.js', r'js\.authorize\.net',
+        r'anet\.js', r'data-authorize', r'authorize-payment', r'apitest\.authorize\.net',
+        r'accept\.authorize\.net', r'api\.authorize\.net', r'authorize-hosted-form',
+        r'merchantAuthentication', r'data-api-login-id', r'data-client-key', r'Accept\.dispatchData',
+        r'api\.authorize\.net/xml/v1', r'accept\.authorize\.net/payment', r'authorize\.net/profile'
     ]],
-    'chargebee': [re.compile(pattern, re.IGNORECASE) for pattern in [
-        r'chargebee\.com', r'api\.chargebee\.com', r'js\.chargebee\.com',
-        r'chargebee\.js', r'data-cb', r'chargebee-checkout', r'cb-checkout',
-        r'chargebee-payment', r'chargebee-portal', r'chargebee-subscription',
-        r'chargebee\.min\.js', r'cb\.init', r'chargebee-hosted'
+    "square": [re.compile(pattern, re.IGNORECASE) for pattern in [
+        r'squareup\.com', r'js\.squarecdn\.com', r'square\.js', r'data-square', r'square-payment-form',
+        r'square-checkout-sdk', r'connect\.squareup\.com', r'square\.min\.js', r'squarecdn\.com',
+        r'squareupsandbox\.com', r'sandbox\.web\.squarecdn\.com', r'square-payment-flow', r'square\.card',
+        r'squareup\.com/payments', r'data-square-application-id', r'square\.createPayment'
     ]],
-    'recurly': [re.compile(pattern, re.IGNORECASE) for pattern in [
-        r'recurly\.com', r'api\.recurly\.com', r'js\.recurly\.com',
-        r'recurly\.js', r'data-recurly', r'recurly-checkout', r'recurly-payment',
-        r'recurly-subscription', r'recurly\.min\.js', r'recurly\.configure'
+    "klarna": [re.compile(pattern, re.IGNORECASE) for pattern in [
+        r'klarna\.com', r'js\.klarna\.com', r'klarna\.js', r'data-klarna', r'klarna-checkout',
+        r'klarna-onsite-messaging', r'playground\.klarna\.com', r'klarna-payments', r'klarna\.min\.js',
+        r'klarna-order-id', r'klarna-checkout-container', r'klarna-load', r'api\.klarna\.com'
     ]],
-    'fastspring': [re.compile(pattern, re.IGNORECASE) for pattern in [
-        r'fastspring\.com', r'api\.fastspring\.com', r'fastspring\.js',
-        r'fastspring-checkout', r'data-fastspring', r'fastspring\.min\.js',
-        r'fastspring\.storefront', r'fastspring\.builder'
+    "checkout.com": [re.compile(pattern, re.IGNORECASE) for pattern in [
+        r'api\.checkout\.com', r'cko\.js', r'data-checkout', r'checkout-sdk', r'checkout-payment',
+        r'js\.checkout\.com', r'secure\.checkout\.com', r'checkout\.frames\.js', r'api\.sandbox\.checkout\.com',
+        r'cko-payment-token', r'checkout\.init', r'cko-hosted', r'checkout\.com/v2', r'cko-card-token'
+    ]],
+    "razorpay": [re.compile(pattern, re.IGNORECASE) for pattern in [
+        r'checkout\.razorpay\.com', r'razorpay\.js', r'data-razorpay', r'razorpay-checkout',
+        r'razorpay-payment-api', r'razorpay-sdk', r'razorpay-payment-button', r'razorpay-order-id',
+        r'api\.razorpay\.com', r'razorpay\.min\.js', r'payment_box payment_method_razorpay',
+        r'razorpay', r'cdn\.razorpay\.com', r'rzp_payment_icon\.svg', r'razorpay\.checkout',
+        r'data-razorpay-key', r'razorpay_payment_id', r'checkout\.razorpay\.com/v1', r'razorpay-hosted'
+    ]],
+    "paytm": [re.compile(pattern, re.IGNORECASE) for pattern in [
+        r'securegw\.paytm\.in', r'api\.paytm\.com', r'paytm\.js', r'data-paytm', r'paytm-checkout',
+        r'paytm-payment-sdk', r'paytm-wallet', r'paytm\.allinonesdk', r'securegw-stage\.paytm\.in',
+        r'paytm\.min\.js', r'paytm-transaction-id', r'paytm\.invoke', r'paytm-checkout-js',
+        r'data-paytm-order-id'
+    ]],
+    "Shopify Payments": [re.compile(pattern, re.IGNORECASE) for pattern in [
+        r'pay\.shopify\.com', r'data-shopify-payments', r'shopify-checkout-sdk', r'shopify-payment-api',
+        r'shopify-sdk', r'shopify-express-checkout', r'shopify_payments\.js', r'checkout\.shopify\.com',
+        r'shopify-payment-token', r'shopify\.card', r'shopify-checkout-api', r'data-shopify-checkout',
+        r'shopify\.com/api'
+    ]],
+    "worldpay": [re.compile(pattern, re.IGNORECASE) for pattern in [
+        r'secure\.worldpay\.com', r'worldpay\.js', r'data-worldpay', r'worldpay-checkout',
+        r'worldpay-payment-sdk', r'worldpay-secure', r'secure-test\.worldpay\.com', r'worldpay\.min\.js',
+        r'worldpay\.token', r'worldpay-payment-form', r'access\.worldpay\.com', r'worldpay-3ds',
+        r'data-worldpay-token'
+    ]],
+    "2checkout": [re.compile(pattern, re.IGNORECASE) for pattern in [
+        r'www\.2checkout\.com', r'2co\.js', r'data-2checkout', r'2checkout-payment', r'secure\.2co\.com',
+        r'2checkout-hosted', r'api\.2checkout\.com', r'2co\.min\.js', r'2checkout\.token', r'2co-checkout',
+        r'data-2co-seller-id', r'2checkout\.convertplus', r'secure\.2co\.com/v2'
+    ]],
+    "Amazon pay": [re.compile(pattern, re.IGNORECASE) for pattern in [
+        r'payments\.amazon\.com', r'amazonpay\.js', r'data-amazon-pay', r'amazon-pay-button',
+        r'amazon-pay-checkout-sdk', r'amazon-pay-wallet', r'amazon-checkout\.js', r'payments\.amazon\.com/v2',
+        r'amazon-pay-token', r'amazon-pay-sdk', r'data-amazon-pay-merchant-id', r'amazon-pay-signin',
+        r'amazon-pay-checkout-session'
+    ]],
+    "Apple pay": [re.compile(pattern, re.IGNORECASE) for pattern in [
+        r'apple-pay\.js', r'data-apple-pay', r'apple-pay-button', r'apple-pay-checkout-sdk',
+        r'apple-pay-session', r'apple-pay-payment-request', r'ApplePaySession', r'apple-pay-merchant-id',
+        r'apple-pay-payment', r'apple-pay-sdk', r'data-apple-pay-token', r'apple-pay-checkout',
+        r'apple-pay-domain'
+    ]],
+    "Google pay": [re.compile(pattern, re.IGNORECASE) for pattern in [
+        r'pay\.google\.com', r'googlepay\.js', r'data-google-pay', r'google-pay-button',
+        r'google-pay-checkout-sdk', r'google-pay-tokenization', r'payments\.googleapis\.com',
+        r'google\.payments\.api', r'google-pay-token', r'google-pay-payment-method',
+        r'data-google-pay-merchant-id', r'google-pay-checkout', r'google-pay-sdk'
+    ]],
+    "mollie": [re.compile(pattern, re.IGNORECASE) for pattern in [
+        r'api\.mollie\.com', r'mollie\.js', r'data-mollie', r'mollie-checkout', r'mollie-payment-sdk',
+        r'mollie-components', r'mollie\.min\.js', r'profile\.mollie\.com', r'mollie-payment-token',
+        r'mollie-create-payment', r'data-mollie-profile-id', r'mollie-checkout-form', r'mollie-redirect'
+    ]],
+    "opayo": [re.compile(pattern, re.IGNORECASE) for pattern in [
+        r'live\.opayo\.eu', r'opayo\.js', r'data-opayo', r'opoayo-checkout', r'opayo-payment-sdk',
+        r'opayo-form', r'test\.opayo\.eu', r'opayo\.min\.js', r'opayo-payment-token', r'opayo-3ds',
+        r'data-opayo-merchant-id', r'opayo-hosted', r'opayo\.api'
+    ]],
+    "paddle": [re.compile(pattern, re.IGNORECASE) for pattern in [
+        r'checkout\.paddle\.com', r'paddle_button\.js', r'paddle\.js', r'data-paddle',
+        r'paddle-checkout-sdk', r'paddle-product-id', r'api\.paddle\.com', r'paddle\.min\.js',
+        r'paddle-checkout', r'data-paddle-vendor-id', r'paddle\.Checkout\.open', r'paddle-transaction-id',
+        r'paddle-hosted'
     ]]
 }
 
+# Captcha patterns
 CAPTCHA_PATTERNS = {
-    'recaptcha': ['recaptcha', 'g-recaptcha', 'recaptcha/api.js', 'recaptcha/enterprise.js'],
-    'hcaptcha': ['hcaptcha', 'hcaptcha.com', 'hcaptcha-checkbox', 'hcaptcha-invisible'],
-    'cloudflare': ['cf-turnstile', 'cloudflare/turnstile', 'challenge-platform'],
-    'arkose': ['arkoselabs', 'funcaptcha', 'arkose.js'],
-    'datadome': ['datadome', 'datadome.co', 'captcha-endpoint']
+    "reCaptcha": [
+        "g-recaptcha", "recaptcha/api.js", "data-sitekey", "nocaptcha",
+        "recaptcha.net", "www.google.com/recaptcha", "grecaptcha.execute",
+        "grecaptcha.render", "grecaptcha.ready", "recaptcha-token"
+    ],
+    "hCaptcha": [
+        "hcaptcha", "assets.hcaptcha.com", "hcaptcha.com/1/api.js",
+        "data-hcaptcha-sitekey", "js.stripe.com/v3/hcaptcha-invisible", "hcaptcha-invisible", "hcaptcha.execute"
+    ],
+    "Turnstile": [
+        "turnstile", "challenges.cloudflare.com", "cf-turnstile-response",
+        "data-sitekey", "__cf_chl_", "cf_clearance"
+    ],
+    "Arkose Labs": [
+        "arkose-labs", "funcaptcha", "client-api.arkoselabs.com",
+        "fc-token", "fc-widget", "arkose", "press and hold", "funcaptcha.com"
+    ],
+    "GeeTest": [
+        "geetest", "gt_captcha_obj", "gt.js", "geetest_challenge",
+        "geetest_validate", "geetest_seccode"
+    ],
+    "BotDetect": [
+        "botdetectcaptcha", "BotDetect", "BDC_CaptchaImage", "CaptchaCodeTextBox"
+    ],
+    "KeyCAPTCHA": [
+        "keycaptcha", "kc_submit", "kc__widget", "s_kc_cid"
+    ],
+    "Anti Bot Detection": [
+        "fingerprintjs", "js.challenge", "checking your browser",
+        "verify you are human", "please enable javascript and cookies",
+        "sec-ch-ua-platform"
+    ],
+    "Captcha": [
+        "captcha-container", "captcha-box", "captcha-frame", "captcha_input",
+        "id=\"captcha\"", "class=\"captcha\"", "iframe.+?captcha",
+        "data-captcha-sitekey"
+    ]
 }
 
 CLOUDFLARE_KEYWORDS = [re.compile(pattern, re.IGNORECASE) for pattern in [
@@ -127,17 +268,25 @@ GRAPHQL_KEYWORDS = [re.compile(pattern, re.IGNORECASE) for pattern in [
     r'graphql-api', r'graphql/v1'
 ]]
 
+# 3D Secure keywords (regex)
 THREE_D_SECURE_KEYWORDS = [re.compile(pattern, re.IGNORECASE) for pattern in [
-    r'3ds', r'3d-secure', r'3ds2', r'verifiedbyvisa', r'securecode', r'acs\.url',
-    r'3dsecure', r'3ds-challenge', r'3ds-auth', r'cardinalcommerce', r'3ds-iframe',
-    r'3ds-verify', r'authentication\.3ds', r'3ds\.js'
+    r'three_d_secure', r'3dsecure', r'acs', r'acs_url', r'acsurl', r'redirect',
+    r'secure-auth', r'three_d_secure_usage', r'challenge', r'3ds', r'3ds1', r'3ds2', r'tds', r'tdsecure',
+    r'3d-secure', r'three-d', r'3dcheck', r'3d-auth', r'three-ds',
+    r'stripe\.com/3ds', r'm\.stripe\.network', r'hooks\.stripe\.com/3ds',
+    r'paddle_frame', r'paddlejs', r'secure\.paddle\.com', r'buy\.paddle\.com',
+    r'idcheck', r'garanti\.com\.tr', r'adyen\.com/hpp', r'adyen\.com/checkout',
+    r'adyenpayments\.com/3ds', r'auth\.razorpay\.com', r'razorpay\.com/3ds',
+    r'secure\.razorpay\.com', r'3ds\.braintreegateway\.com', r'verify\.3ds',
+    r'checkout\.com/3ds', r'checkout\.com/challenge', r'3ds\.paypal\.com',
+    r'authentication\.klarna\.com', r'secure\.klarna\.com/3ds'
 ]]
 
 CARD_KEYWORDS = [re.compile(r'\b' + card_type + r'\b', re.IGNORECASE) for card_type in [
     'visa', 'mastercard', 'amex', 'american express', 'discover', 'diners club', 'jcb'
 ]]
 
-BUTTON_KEYWORDS = ['pay', 'checkout', 'subscribe', 'purchase', 'buy', 'order', 'upgrade', 'billing', 'payment']
+BUTTON_KEYWORDS = ['pay', 'checkout', 'subscribe', 'purchase', 'buy', 'order', 'upgrade', 'billing', 'payment', 'shop', 'add to cart', 'price']
 
 class StealthPaymentDetector:
     def __init__(self):
@@ -162,7 +311,7 @@ class StealthPaymentDetector:
         try:
             async def handle_request(request):
                 req_url = request.url
-                if any(keyword in req_url.lower() for keyword in NETWORK_PAYMENT_URL_KEYWORDS) and \
+                if any(pattern.search(req_url.lower()) for pattern in NETWORK_PAYMENT_URL_KEYWORDS) and \
                    not any(ignore in req_url.lower() for ignore in IGNORE_IF_URL_CONTAINS) and \
                    not any(req_url.lower().endswith(ext) for ext in NON_HTML_EXTENSIONS) and \
                    not any(domain in req_url.lower() for domain in SKIP_DOMAINS):
@@ -222,7 +371,7 @@ class StealthPaymentDetector:
 
             for captcha_type, patterns in CAPTCHA_PATTERNS.items():
                 for pattern in patterns:
-                    if pattern in content.lower():
+                    if pattern.lower() in content.lower():
                         if captcha_type not in self.results['captchas']:
                             self.results['captchas'].append(captcha_type)
                             logger.info(f'Detected captcha: {captcha_type}')
@@ -290,7 +439,7 @@ class StealthPaymentDetector:
                                     logger.info(f'Detected payment gateway in iframe (depth {depth}): {gateway}')
                     for captcha_type, patterns in CAPTCHA_PATTERNS.items():
                         for pattern in patterns:
-                            if pattern in iframe_html.lower():
+                            if pattern.lower() in iframe_html.lower():
                                 if captcha_type not in self.results['captchas']:
                                     self.results['captchas'].append(captcha_type)
                                     logger.info(f'Detected captcha in iframe (depth {depth}): {captcha_type}')
@@ -403,7 +552,7 @@ class StealthPaymentDetector:
                 try:
                     driver.get(url)
                     time.sleep(5)
-                    has_payment_indicators = any(keyword in url.lower() for keyword in NETWORK_PAYMENT_URL_KEYWORDS)
+                    has_payment_indicators = any(pattern.search(url.lower()) for pattern in NETWORK_PAYMENT_URL_KEYWORDS)
                     if not has_payment_indicators:
                         page_source = driver.page_source.lower()
                         for gateway, patterns in GATEWAY_KEYWORDS.items():
@@ -450,7 +599,7 @@ class StealthPaymentDetector:
 
             for request in driver.requests:
                 req_url = request.url
-                if any(keyword in req_url.lower() for keyword in NETWORK_PAYMENT_URL_KEYWORDS) and \
+                if any(pattern.search(req_url.lower()) for pattern in NETWORK_PAYMENT_URL_KEYWORDS) and \
                    not any(ignore in req_url.lower() for ignore in IGNORE_IF_URL_CONTAINS) and \
                    not any(req_url.lower().endswith(ext) for ext in NON_HTML_EXTENSIONS) and \
                    not any(domain in req_url.lower() for domain in SKIP_DOMAINS):
@@ -507,7 +656,7 @@ class StealthPaymentDetector:
 
                 page = await context.new_page()
 
-                has_payment_indicators = any(keyword in url.lower() for keyword in NETWORK_PAYMENT_URL_KEYWORDS)
+                has_payment_indicators = any(pattern.search(url.lower()) for pattern in NETWORK_PAYMENT_URL_KEYWORDS)
                 if not has_payment_indicators:
                     try:
                         await page.goto(url, wait_until='domcontentloaded', timeout=30000)
@@ -561,7 +710,7 @@ class StealthPaymentDetector:
                         parsed = urlparse(href)
                         if not parsed.scheme:
                             href = urljoin(url, href)
-                        if any(keyword in href.lower() for keyword in NETWORK_PAYMENT_URL_KEYWORDS) and \
+                        if any(pattern.search(href.lower()) for pattern in NETWORK_PAYMENT_URL_KEYWORDS) and \
                            not any(ignore in href.lower() for ignore in IGNORE_IF_URL_CONTAINS) and \
                            href not in self.visited_urls:
                             hrefs.append(href)
