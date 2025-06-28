@@ -174,7 +174,7 @@ class StealthPaymentDetector:
         }
         self.ua = UserAgent()
         self.visited_urls = set()
-        self.max_depth = 3
+        self.max_depth = 2
         self.max_urls = 50
 
     async def analyze_dom(self, page, url):
@@ -314,11 +314,11 @@ class StealthPaymentDetector:
                         await button.wait_for_element_state("visible", timeout=5000)
                         await button.scroll_into_view_if_needed(timeout=5000)
                         # Verify button is interactable
-                        is_in_viewport = await button.evaluate("(element) => {
+                        is_in_viewport = await button.evaluate("""(element) => {
                             const rect = element.getBoundingClientRect();
                             return (
                                 rect.top >= 0 &&
-                                rect.left >= 0 &&
+                                rect.top >= 0 &&
                                 rect.bottom <= window.innerHeight &&
                                 rect.right <= window.innerWidth
                             );
@@ -402,10 +402,20 @@ class StealthPaymentDetector:
                 '''
             })
 
-            driver.get(url)
-            time.sleep(3)
 
             from selenium.webdriver.common.by import By
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                  driver.get(url)
+                  time.sleep(3)
+                  break
+                except Exception as e:
+                    logger.error(f"Retry {attempt + 1}/{max_retries} failed for driver.get({url}): {e}")
+                    if attempt == max_retries - 1:
+                        logger.error(f"Max retries reached for {url}, skipping Selenium analysis")
+                        return
+                        time.sleep(2)
             buttons = driver.find_elements(By.CSS_SELECTOR, 'button, a, input[type="submit"], input[type="button"]')
             for button in buttons:
                 text = button.text.lower().strip()
