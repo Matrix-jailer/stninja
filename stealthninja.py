@@ -551,7 +551,7 @@ class StealthPaymentDetector:
 
 @app.get("/gateway")
 async def detect_payment_gateway(url: str):
-    """API endpoint to detect payment gateways for a given URL."""
+    'API endpoint to detect payment gateways for a given URL.'
     if not url.startswith(("http://", "https://")):
         raise HTTPException(status_code=400, detail="URL must start with http:// or https://")
     
