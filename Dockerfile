@@ -1,7 +1,5 @@
-# Use a lightweight Python base image
 FROM python:3.9-slim
 
-# Set working directory
 WORKDIR /app
 
 # Install system dependencies for Playwright and Selenium
@@ -31,19 +29,19 @@ RUN apt-get update && apt-get install -y \
     chromium-driver \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements.txt and install Python dependencies
+# Copy and install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright browsers and dependencies
+# Install Playwright browsers
 RUN playwright install --with-deps chromium
 
 # Copy application files
 COPY main.py .
 COPY stealthninja.py .
 
-# Set environment variable for Render's port
+# Set default port (Render overrides with $PORT)
 ENV PORT=8000
 
-# Start the FastAPI server with Uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "$PORT"]
+# Use shell form to ensure $PORT substitution
+CMD uvicorn main:app --host 0.0.0.0 --port $PORT
