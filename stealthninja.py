@@ -131,10 +131,9 @@ IGNORE_IF_URL_CONTAINS = [
 class StealthPaymentDetector:
     """A stealth web scraper for detecting payment gateways and related features."""
 
-    def __init__(self, proxy_port: int = 42687):
-        """Initialize the detector with user agent, proxy, and crawling settings."""
+    def __init__(self):
+        """Initialize the detector with user agent and crawling settings."""
         self.ua = UserAgent()
-        self.proxy_port = proxy_port
         self.results: Dict[str, Any] = {
             "payment_gateways": [],
             "captchas": [],
@@ -142,7 +141,7 @@ class StealthPaymentDetector:
             "graphql": False,
             "3ds": [],
             "platforms": [],
-            "cards": [],  # Aligned with GhostAPIPRO.py
+            "cards": [],
             "network_requests": [],
             "hidden_payment_data": []
         }
@@ -321,13 +320,10 @@ class StealthPaymentDetector:
         except Exception as e:
             logger.error(f"Error analyzing {url}: {e}")
 
-    async def selenium_network_analysis(self, url: str) -> Dict[str, Any]:
-        """Analyze a website for payment gateways and related features."""
+    async def playwright_network_analysis(self, url: str) -> Dict[str, Any]:
+        """Analyze a website for payment gateways and related features using Playwright."""
         async with async_playwright() as p:
-            browser = await p.chromium.launch(
-                headless=True,
-                proxy={"server": f"http://127.0.0.1:{self.proxy_port}"}
-            )
+            browser = await p.chromium.launch(headless=True)
             context = await browser.new_context(
                 user_agent=self.ua.random,
                 viewport={"width": random.randint(800, 1920), "height": random.randint(600, 1080)},
@@ -364,7 +360,7 @@ async def search_payment_indicators(url: HttpUrl):
     """API endpoint to analyze a URL for payment indicators."""
     try:
         detector = StealthPaymentDetector()
-        result = await detector.selenium_network_analysis(str(url))
+        result = await detector.playwright_network_analysis(str(url))
         return result
     except Exception as e:
         logger.error(f"Error processing {url}: {e}")
