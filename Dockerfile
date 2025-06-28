@@ -1,41 +1,49 @@
-# Use a slim Python 3.10 base image for efficiency
-FROM python:3.10-slim
+# Use a lightweight Python base image
+FROM python:3.9-slim
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies required for Playwright and Selenium
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libpq-dev \
-    curl \
+# Install system dependencies for Playwright and Selenium
+RUN apt-get update && apt-get install -y \
+    libx11-6 \
+    libx11-xcb1 \
+    libxcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxext6 \
+    libxi6 \
+    libxtst6 \
     libnss3 \
+    libnspr4 \
+    libasound2 \
     libatk1.0-0 \
     libatk-bridge2.0-0 \
+    libcups2 \
     libdrm2 \
-    libxkbcommon0 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxfixes3 \
-    libxrandr2 \
     libgbm1 \
-    libasound2 \
-    libpangocairo-1.0-0 \
     libpango-1.0-0 \
     libcairo2 \
-    libcups2 \
-    libgtk-3-0 \
+    libatspi2.0-0 \
+    libxss1 \
+    chromium \
+    chromium-driver \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies from requirements.txt
+# Copy requirements.txt and install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright browsers (Chromium)
-RUN playwright install chromium
+# Install Playwright browsers and dependencies
+RUN playwright install --with-deps chromium
 
-# Copy the script
+# Copy application files
+COPY main.py .
 COPY stealthninja.py .
 
-# Set the start command for Render (using Uvicorn)
-CMD ["uvicorn", "stealthninja:app", "--host", "0.0.0.0", "--port", "80"]
+# Set environment variable for Render's port
+ENV PORT=8000
+
+# Start the FastAPI server with Uvicorn
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "$PORT"]
